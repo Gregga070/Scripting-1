@@ -1,0 +1,188 @@
+from datetime import datetime
+
+import os
+
+
+
+
+# Stel het pad voor de bestanden in
+
+bestand_pad = r"C:\Test1\\"
+
+
+
+
+print("= = = Kentekencontroleprogramma gestart = = =")
+
+
+
+
+# Toon de huidige datum en tijd
+
+nu = datetime.now()
+
+huidige_datum = nu.strftime("%Y-%m-%d")
+
+huidige_tijd = nu.strftime("%H:%M:%S")
+
+print(f"Datum: {huidige_datum}")
+
+print(f"Tijd: {huidige_tijd}")
+
+
+
+
+# Open RDW.csv en GescandeData.csv
+
+with open(os.path.join(bestand_pad, "RDW.csv"), "r") as rdw_bestand, \
+
+     open(os.path.join(bestand_pad, "GescandeData.csv"), "r") as gescande_bestand:
+
+
+
+
+    aantal_verwerkt = aantal_fouten = 0
+
+
+
+
+    # Vraag of vals.txt moet worden leeggemaakt
+
+    while True:
+
+        wis_vals = input("Wilt u vals.txt leeggemaakt hebben? (ja of nee): ").lower()
+
+        if wis_vals in ['ja', 'nee']:
+
+            break
+
+        else:
+
+            print("Ongeldige invoer, typ 'ja' of 'nee'.")
+
+
+
+
+    # Open vals.txt bestand in de juiste modus
+
+    modus = 'w' if wis_vals == 'ja' else 'a'
+
+    with open(os.path.join(bestand_pad, "vals.txt"), modus) as foutmeldingen_bestand:
+
+
+
+
+        # Verwerk elke regel in GescandeData.csv
+
+        for scan_regel in gescande_bestand:
+
+            scan_regel = scan_regel.strip()
+
+            if not scan_regel:
+
+                continue
+
+
+
+
+            scan_parts = scan_regel.split(",")
+
+            if len(scan_parts) != 3:
+
+                print(f"Onverwacht aantal kolommen in scan_regel: {scan_regel}")
+
+                aantal_fouten += 1
+
+                foutmeldingen_bestand.write(f"Fout formaat scan_regel,{scan_regel}\n")
+
+                continue
+
+
+
+
+            gescande_kenteken, gescande_merk, gescande_type = map(str.strip, scan_parts)
+
+            aantal_verwerkt += 1
+
+            match_gevonden = False
+
+
+
+
+            rdw_bestand.seek(0)
+
+            for rdw_regel in rdw_bestand:
+
+                rdw_regel = rdw_regel.strip()
+
+                rdw_parts = rdw_regel.split(",")
+
+                if len(rdw_parts) != 4:
+
+                    print(f"Onverwacht aantal kolommen in rdw_regel: {rdw_regel}")
+
+                    continue
+
+
+
+
+                kenteken_rdw, _, merk_rdw, model_rdw = map(str.strip, rdw_parts)
+
+
+
+
+                if gescande_kenteken == kenteken_rdw:
+
+                    match_gevonden = True
+
+                    if gescande_merk != merk_rdw or gescande_type != model_rdw:
+
+                        aantal_fouten += 1
+
+                        foutmeldingen_bestand.write(f"Onjuist,{gescande_kenteken},{gescande_merk},{gescande_type}\n")
+
+                        print(f"Fout: {gescande_kenteken} ({gescande_merk} {gescande_type}) "
+
+                              f"komt niet overeen met RDW gegevens ({merk_rdw} {model_rdw})\n")
+
+                    break
+
+
+
+
+            if not match_gevonden:
+
+                aantal_fouten += 1
+
+                foutmeldingen_bestand.write(f"Onbekend,{gescande_kenteken},{gescande_merk},{gescande_type}\n")
+
+                print(f"Onbekend kenteken: {gescande_kenteken} ({gescande_merk} {gescande_type})\n")
+
+
+
+
+# Resultaten tonen
+
+print(f"Verwerkte kentekens: {aantal_verwerkt}")
+
+print(f"Foutieve kentekens: {aantal_fouten}")
+
+
+
+
+print("= = = Kentekencontroleprogramma afgesloten = = =")
+
+
+
+
+# Toon opnieuw de huidige datum en tijd
+
+nu = datetime.now()
+
+huidige_datum = nu.strftime("%Y-%m-%d")
+
+huidige_tijd = nu.strftime("%H:%M:%S")
+
+print(f"Datum: {huidige_datum}")
+
+print(f"Tijd: {huidige_tijd}")
